@@ -23,6 +23,25 @@ spec:
       taskRef:
         name: cleanup
 
+    - name: fix-permissions
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
+      taskSpec:
+        steps:
+          - name: fix-permissions
+            image: busybox
+            script: |
+              #!/bin/sh
+              echo "Fixing permissions on /workspace/output..."
+              ls -ld /workspace/output
+              chown -R 0:0 /workspace/output
+              chmod -R 777 /workspace/output
+            securityContext:
+              runAsUser: 0   # ✅ Run as root to modify permissions
+      runAfter:
+        - init
+
     - name: clone
       workspaces:
         - name: output
@@ -35,4 +54,18 @@ spec:
       - name: revision
         value: $(params.branch)
       runAfter:
-        - init
+        - fix-permissions  # ✅ Ensures permissions are set before cloning
+
+    - name: lint
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: flake8
+      params:
+        - name: image
+          value: python:3.9-slim
+        - name: args
+          value: ["--count", "--max-complexity=10", "--max-line-length=127", "--statistics"]
+      runAfter:
+        - clone  # ✅ Ensures linting runs after cloning
