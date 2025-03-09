@@ -134,3 +134,10 @@ def test_security_headers(client):
     assert response.headers["X-Content-Type-Options"] == "nosniff"
     assert response.headers["Content-Security-Policy"] == "default-src 'self'; object-src 'none'"
     assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+
+def test_cors_security(self):
+        """It should return a CORS header"""
+        response = self.client.get('/', environ_overrides=HTTPS_ENVIRON)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Check for the CORS header
+        self.assertEqual(response.headers.get('Access-Control-Allow-Origin'), '*')
