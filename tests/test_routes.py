@@ -12,12 +12,15 @@ from tests.factories import AccountFactory
 from service.common import status  # HTTP Status Codes
 from service.models import db, Account, init_db
 from service.routes import app
+from flask_talisman import Talisman
+Talisman(app)
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
 )
 
 BASE_URL = "/accounts"
+HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 
 
 ######################################################################
@@ -124,3 +127,10 @@ class TestAccountService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
     # ADD YOUR TEST CASES HERE ...
+def test_security_headers(client):
+    response = client.get("/", environ_overrides=HTTPS_ENVIRON)
+
+    assert response.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["Content-Security-Policy"] == "default-src 'self'; object-src 'none'"
+    assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
